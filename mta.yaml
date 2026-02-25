@@ -3,90 +3,107 @@ ID: test-ci-cd
 description: A simple CAP project.
 version: 1.0.0
 modules:
-- name: test-ci-cd-srv
-  type: nodejs
-  path: gen/srv
-  requires:
-  - name: test-ci-cd-db
-  provides:
-  - name: srv-api
-    properties:
-      srv-url: ${default-url}
-  parameters:
-    buildpack: nodejs_buildpack
-    instances: 1
-  build-parameters:
-    builder: npm-ci
-- name: test-ci-cd-db-deployer
-  type: hdb
-  path: gen/db
-  requires:
-  - name: test-ci-cd-db
-  parameters:
-    buildpack: nodejs_buildpack
-- name: test-ci-cd-destination-content
-  type: com.sap.application.content
-  requires:
-  - name: test-ci-cd-destination-service
+  - name: test-ci-cd-srv
+    type: nodejs
+    path: gen/srv
+    requires:
+      - name: test-ci-cd-db
+      - name: uaa_test-ci-cd
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
     parameters:
-      content-target: true
-  - name: test-ci-cd_html_repo_host
+      buildpack: nodejs_buildpack
+      instances: 1
+    build-parameters:
+      builder: npm-ci
+  - name: test-ci-cd-db-deployer
+    type: hdb
+    path: gen/db
+    requires:
+      - name: test-ci-cd-db
     parameters:
-      service-key:
-        name: test-ci-cd_html_repo_host-key
-  - name: uaa_test-ci-cd
+      buildpack: nodejs_buildpack
+  - name: test-ci-cd-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: test-ci-cd-destination-service
+        parameters:
+          content-target: true
+      - name: test-ci-cd_html_repo_host
+        parameters:
+          service-key:
+            name: test-ci-cd_html_repo_host-key
+      - name: uaa_test-ci-cd
+        parameters:
+          service-key:
+            name: uaa_test-ci-cd-key
     parameters:
-      service-key:
-        name: uaa_test-ci-cd-key
-  parameters:
-    content:
-      instance:
-        destinations:
-        - Name: cicd_approuter_test_ci_cd_html_repo_host
-          ServiceInstanceName: test-ci-cd-html5-app-host-service
-          ServiceKeyName: test-ci-cd_html_repo_host-key
-          sap.cloud.service: cicd-approuter
-        - Authentication: OAuth2UserTokenExchange
-          Name: cicd_approuter_uaa_test_ci_cd
-          ServiceInstanceName: test-ci-cd-xsuaa-service
-          ServiceKeyName: uaa_test-ci-cd-key
-          sap.cloud.service: cicd-approuter
-        existing_destinations_policy: ignore
-  build-parameters:
-    no-source: true
+      content:
+        instance:
+          destinations:
+            - Name: cicd_approuter_test_ci_cd_html_repo_host
+              ServiceInstanceName: test-ci-cd-html5-app-host-service
+              ServiceKeyName: test-ci-cd_html_repo_host-key
+              sap.cloud.service: cicd-approuter
+            - Authentication: OAuth2UserTokenExchange
+              Name: cicd_approuter_uaa_test_ci_cd
+              ServiceInstanceName: test-ci-cd-xsuaa-service
+              ServiceKeyName: uaa_test-ci-cd-key
+              sap.cloud.service: cicd-approuter
+          existing_destinations_policy: ignore
+    build-parameters:
+      no-source: true
 resources:
-- name: test-ci-cd-db
-  type: com.sap.xs.hdi-container
-  parameters:
-    service: hana
-    service-plan: hdi-shared
-- name: test-ci-cd-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: true
-      version: 1.0.0
-    service: destination
-    service-name: test-ci-cd-destination-service
-    service-plan: lite
-- name: test-ci-cd_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-name: test-ci-cd-html5-app-host-service
-    service-plan: app-host
-- name: uaa_test-ci-cd
-  type: org.cloudfoundry.managed-service
-  parameters:
-    path: ./xs-security.json
-    service: xsuaa
-    service-name: test-ci-cd-xsuaa-service
-    service-plan: application
+  - name: test-ci-cd-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: test-ci-cd-destination-service
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        HTML5Runtime_enabled: true
+        version: 1.0.0
+      service: destination
+      service-name: test-ci-cd-destination-service
+      service-plan: lite
+  - name: test-ci-cd_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-name: test-ci-cd-html5-app-host-service
+      service-plan: app-host
+  - name: uaa_test-ci-cd
+    type: org.cloudfoundry.managed-service
+    parameters:
+      path: ./xs-security.json
+      service: xsuaa
+      service-name: test-ci-cd-xsuaa-service
+      service-plan: application
+      config:
+        xsappname: test-ci-cd-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
+        role-collections:
+          - name: 'Viewer (test-ci-cd ${org}-${space})'
+            description: 'generated'
+            role-template-references:
+              - '$XSAPPNAME.Viewer'
+          - name: 'Admin (test-ci-cd ${org}-${space})'
+            description: 'generated'
+            role-template-references:
+              - '$XSAPPNAME.Admin'
 parameters:
   enable-parallel-deployments: true
 build-parameters:
   before-all:
-  - builder: custom
-    commands:
-    - npm ci
-    - npx cds build --production
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
