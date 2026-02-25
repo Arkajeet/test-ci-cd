@@ -1,4 +1,4 @@
-using { cicd as db } from '../db/schema';
+using { cicdpipeline as db } from '../db/schema';
 
 service EmployeeService {
 

@@ -1,4 +1,4 @@
-namespace cicd;
+namespace cicdpipeline;
 
 entity Employees {
   key ID     : UUID;
