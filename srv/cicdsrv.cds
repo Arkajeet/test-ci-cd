@@ -1,4 +1,4 @@
-using { cicd as db } from '../db/schema';
+using { cicdbingo as db } from '../db/schema';
 
 service EmployeeService {
 

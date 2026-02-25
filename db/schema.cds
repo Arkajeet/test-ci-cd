@@ -1,4 +1,4 @@
-namespace cicd;
+namespace cicdbingo;
 
 entity Employees {
   key ID     : UUID;
